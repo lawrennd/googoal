@@ -1,7 +1,7 @@
 goggles
 ===
 
-Software for interfacing with Google Services
+Software for interfacing with Google Services. This code was originally incorporated with the `pods` software, but split out in May 2021.
 
 ## Google Docs Interface
 
