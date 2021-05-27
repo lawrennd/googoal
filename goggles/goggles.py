@@ -18,7 +18,7 @@ import pandas as pd
 from .config import *
 import numpy as np
 
-from . import notebook as nb
+import pods.notebook as nb
 
 import pods
 
@@ -132,7 +132,7 @@ if GAPI_AVAILABLE:
         table_id = None
         keyfile = None
 
-    class google_service:
+    class Google_service:
         """Base class for accessing a google service"""
 
         # Get a google API connection.
@@ -223,7 +223,7 @@ if GAPI_AVAILABLE:
             fun.__doc__ = docstr
         return fun
 
-    class analytics(google_service):
+    class Analytics(Google_service):
         """
         Class for accessing google analytics and analyzing data.
         """
@@ -233,7 +233,7 @@ if GAPI_AVAILABLE:
         ):
             if scope is None:
                 scope = ["https://www.googleapis.com/auth/analytics.readonly"]
-            google_service.__init__(
+            Google_service.__init__(
                 self, scope=scope, credentials=credentials, http=http, service=service
             )
             if service is None:
@@ -303,7 +303,7 @@ if GAPI_AVAILABLE:
 
 if GS_AVAILABLE and GAPI_AVAILABLE:
 
-    class drive(google_service):
+    class Drive(Google_service):
         """
         Class for accessing a google drive and managing files.
         """
@@ -311,7 +311,7 @@ if GS_AVAILABLE and GAPI_AVAILABLE:
         def __init__(self, scope=None, credentials=None, http=None, service=None):
             if scope is None:
                 scope = ["https://www.googleapis.com/auth/drive"]
-            google_service.__init__(
+            Google_service.__init__(
                 self, scope=scope, credentials=credentials, http=http, service=service
             )
             if service is None:
@@ -334,7 +334,7 @@ if GS_AVAILABLE and GAPI_AVAILABLE:
             for result in results:
                 if not result["labels"]["trashed"]:
                     files.append(
-                        pods.google.resource(
+                        Resource(
                             id=result["id"],
                             name=result["title"],
                             mime_type=result["mimeType"],
@@ -353,7 +353,7 @@ if GS_AVAILABLE and GAPI_AVAILABLE:
 
             return output
 
-    class resource:
+    class Resource:
         """Resource found on the google drive.
         :param id: the google id of the spreadsheet to open (default is None which creates a new spreadsheet).
         """
@@ -361,7 +361,7 @@ if GS_AVAILABLE and GAPI_AVAILABLE:
         def __init__(self, name=None, mime_type=None, url=None, id=None, drive=None):
 
             if drive is None:
-                self.drive = pods.google.drive()
+                self.drive = Drive()
             else:
                 self.drive = drive
 
@@ -549,7 +549,7 @@ if GS_AVAILABLE and GAPI_AVAILABLE:
             )
             return output
 
-    class sheet:
+    class Sheet:
         """
         Class for interchanging information between google spreadsheets and pandas data frames. The class manages a spreadsheet.
 
@@ -596,13 +596,13 @@ if GS_AVAILABLE and GAPI_AVAILABLE:
             self.dtype = dtype
 
             if resource is None:
-                drive = pods.google.drive(scope=scope)
-                self.resource = pods.google.resource(
+                drive = Drive(scope=scope)
+                self.resource = Resource(
                     drive=drive, name="Google Sheet", mime_type=sheet_mime
                 )
             else:
                 if "https://spreadsheets.google.com/feeds" not in resource.drive.scope:
-                    drive = pods.google.drive(scope=scope)
+                    drive = Drive(scope=scope)
                     resource.update_drive(drive)
                 self.resource = resource
 
