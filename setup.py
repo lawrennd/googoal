@@ -15,7 +15,7 @@ from setuptools import find_packages, setup, Command
 
 
 # Package meta-data.
-NAME = "pods"
+NAME = "goggles"
 DESCRIPTION = "Python software for Open Data Science"
 URL = "https://github.com/lawrennd/ods"
 EMAIL = "lawrennd@gmail.com"
@@ -25,25 +25,19 @@ VERSION = "v0.0.21-alpha"
 
 # What packages are required for this module to be executed?
 REQUIRED = [
+    "gspread",
+    "gdata",
+    "oauth2client",
     "pandas",
+    "google-api-python-client",
+
 ]
 
 # What packages are optional?
 EXTRAS = {
-    "google docs interface": [
-        "gspread",
-        "httplib2",
-        "oauth2client",
-        "pandas",
-        "google-api-python-client",
-    ],
-    "pandas google sheet interface": ["gdata"],
-    "google trends interface": ["pytrends"],
-    "Nigerian NMIS data": ["geopandas"],
-    "Kepler telescope light curves": ["astropy"],
 }
 
-PACKAGE_DATA = {"pods": ["defaults.cfg", "data_resources.json", "football_teams.json"]}
+PACKAGE_DATA = {"goggles": ["defaults.yml"]}
 
 DEPENDENCY_LINKS = []
 
