@@ -1,31 +1,25 @@
-#
-# This loads the configuration
-#
-import sys
 import os
+import yaml
 
-if sys.version_info >= (3, 0):
-    import configparser
-else:
-    import ConfigParser as configparser
-
-config = configparser.ConfigParser()
-
-# This is the default configuration file that always needs to be present.
-default_file = os.path.abspath(os.path.join(os.path.dirname(__file__), "defaults.cfg"))
-
-# These files are optional
-# This specifies configurations that are typically specific to the machine (it is found alongside the GPy installation).
+default_file = os.path.join(os.path.dirname(__file__), "defaults.yml")
 local_file = os.path.abspath(os.path.join(os.path.dirname(__file__), "machine.cfg"))
+user_file = '_goggles.yml'
 
-# This specifies configurations specific to the user (it is found in the user home directory)
-home = os.getenv("HOME") or os.getenv("USERPROFILE")
-user_file = os.path.join(home, ".ods_user.cfg")
+config = {}
 
-# Read in the given files.
-config.readfp(open(default_file))
-config.read([local_file, user_file])
-if not config:
+if os.path.exists(default_file):
+    with open(default_file) as file:
+        config.update(yaml.load(file, Loader=yaml.FullLoader))
+
+if os.path.exists(local_file):
+    with open(local_file) as file:
+        config.update(yaml.load(file, Loader=yaml.FullLoader))
+
+if os.path.exists(user_file):
+    with open(user_file) as file:
+        config.update(yaml.load(file, Loader=yaml.FullLoader))
+
+if config=={}:
     raise ValueError(
         "No configuration file found at either "
         + user_file
@@ -35,3 +29,4 @@ if not config:
         + default_file
         + "."
     )
+

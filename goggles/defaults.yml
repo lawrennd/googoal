@@ -1,0 +1,6 @@
+google_docs:
+- user: user@gmail.com
+  oauth2_keyfile: oauth-key-file.json # Set the location of oauth2 key file
+gmail:
+- user: user@gmail.com # Set this section up in your .ods_user.cfg file to make it perosnal to your account.
+  name: "Firstname Lastname"

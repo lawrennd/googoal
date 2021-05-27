@@ -1,28 +1,38 @@
 # Copyright 2014 Open Data Science Initiative and other authors. See AUTHORS.txt
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
-from __future__ import print_function
-from __future__ import absolute_import
-
 import sys
 import os
 import re
 
 
 import pandas as pd
+import numpy as np
+
+import json
+import warnings
 
 from .config import *
-import numpy as np
+
+
+if "google" in config:  # Check if config file is set up
+    keyfile = os.path.expanduser(
+        os.path.expandvars(config["google"]["oauth2_keyfile"]
+    )
+    table_id = os.path.expandvars(config["google"]["analytics_table"])
+else:
+    table_id = None
+    keyfile = None
 
 import pods.notebook as nb
 
-new_oauth2client = False
 from collections import defaultdict
 
+NEW_OAUTH2CLIENT = False
 try:
     # See this change: https://github.com/google/oauth2client/issues/401
     from oauth2client.service_account import ServiceAccountCredentials
 
-    new_oauth2client = True
+    NEW_OAUTH2CLIENT = True
 except ImportError:
     try:
         from oauth2client.client import SignedJwtAssertionCredentials
@@ -98,18 +108,8 @@ query_filters.append(
     }
 )
 
-import json
-import warnings
 
 sheet_mime = "application/vnd.google-apps.spreadsheet"
-if config.has_section("google"):  # Check if config file is set up
-    keyfile = os.path.expanduser(
-        os.path.expandvars(config.get("google", "oauth2_keyfile"))
-    )
-    table_id = os.path.expandvars(config.get("google", "analytics_table"))
-else:
-    table_id = None
-    keyfile = None
 
 class Google_service:
     """Base class for accessing a google service"""
@@ -126,7 +126,7 @@ class Google_service:
                     self.key = bytes(self._oauthkey["private_key"], "UTF-8")
                     self.scope = scope
 
-                    if new_oauth2client:
+                    if NEW_OAUTH2CLIENT:
                         self.credentials = ServiceAccountCredentials.from_json_keyfile_name(
                             os.path.join(keyfile), self.scope
                         )
