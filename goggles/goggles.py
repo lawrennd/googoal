@@ -49,6 +49,8 @@ from googleapiclient import discovery
 
 import types
 
+import gspread
+
 query_filters = []
 query_filters.append(
     {
