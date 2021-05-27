@@ -16,7 +16,7 @@ from .config import *
 
 if "google" in config:  # Check if config file is set up
     keyfile = os.path.expanduser(
-        os.path.expandvars(config["google"]["oauth2_keyfile"]
+        os.path.expandvars(config["google"]["oauth2_keyfile"])
     )
     table_id = os.path.expandvars(config["google"]["analytics_table"])
 else:
