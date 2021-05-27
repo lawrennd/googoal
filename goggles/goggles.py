@@ -123,9 +123,8 @@ class Google_service:
         if service is None:
             if http is None:
                 if credentials is None:
-                    f = open(os.path.join(keyfile))
-                    self._oauthkey = json.load(f)
-                    f.close()
+                    with open(os.path.join(keyfile)) as file:
+                        self._oauthkey = json.load(file)
                     self.email = self._oauthkey["client_email"]
                     self.key = bytes(self._oauthkey["private_key"], "UTF-8")
                     self.scope = scope
@@ -1029,8 +1028,8 @@ class Sheet:
         self._update_row_lookup(index)
 
         num_entries = len(index)
-        start = self.worksheet.get_addr_int(self.header + 1, self.col_indent + 1)
-        end = self.worksheet.get_addr_int(
+        start = gspread.utils.rowcol_to_a1(self.header + 1, self.col_indent + 1)
+        end = gspread.utils.rowcol_to_a1(
             self.header + num_entries, self.col_indent + len(self.col_lookup.index)
         )
         body_cells = self.worksheet.range(start + ":" + end)
