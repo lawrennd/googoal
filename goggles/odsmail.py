@@ -1,15 +1,13 @@
-from __future__ import print_function
-from __future__ import absolute_import
 import smtplib
 import getpass
 
 from . import config
 
-gmail_sender = config.config.get("Gmail", "user")
-gmail_name = config.config.get("Gmail", "name")
+gmail_sender = config["gmail"]["user"]
+gmail_name = config["gmail"]["name"]
 
 
-class gmail:
+class Gmail:
     def __init__(self, username=None, name=None):
         """Open an SMTP TLS session for gmail."""
         self.session = smtplib.SMTP("smtp.gmail.com", 587)
