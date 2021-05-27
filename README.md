@@ -1,15 +1,7 @@
-pods
+goggles
 ===
 
-# Python open data science software. 
-
-This repository contains utilities and tools for open data science including tools for accessing data sets in python. 
-
-This is very much an *alpha* release.
-
-## Datasets
-
-There is a set of notebooks describing the data sets that can be accessed available in the notebooks subdirectory. 
+Software for interfacing with Google Services
 
 ## Google Docs Interface
 
@@ -20,6 +12,7 @@ pip install httplib2
 pip install oauth2client
 pip install google-api-python-client
 pip install gspread
+pip install gdata
 ```
 
 To access a spreadsheet from the script, you need to follow the
@@ -33,4 +26,3 @@ Once you have the key file, you can specify its location in the
 # Set the email address of an account to access google doc information.
 oauth2_keyfile = $HOME/oauth2-key-file-name.json
 ```
-If the `gdata` package is installed (`pip install gdata`) the library can be used as an interface between google spreadsheets and pandas.
