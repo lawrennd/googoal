@@ -831,8 +831,8 @@ class Sheet:
             index = [index]
         minind = self.row_lookup[index].min()
 
-        start = self.worksheet.get_addr_int(minind, self.col_lookup.min())
-        end = self.worksheet.get_addr_int(
+        start = gspread.utils.rowcol_to_a1(minind, self.col_lookup.min())
+        end = gspread.utils.rowcol_to_a1(
             self.row_lookup.max(), self.col_lookup.max()
         )
         cells = self.worksheet.range(start + ":" + end)
@@ -897,8 +897,8 @@ class Sheet:
         maxind = self.row_lookup.max()
         for i, ind in enumerate(self.row_lookup.index):
             self.row_lookup[ind] = maxind + 1 + i
-        start = self.worksheet.get_addr_int(maxind + 1, self.col_lookup.min())
-        end = self.worksheet.get_addr_int(
+        start = gspread.utils.rowcol_to_a1(maxind + 1, self.col_lookup.min())
+        end = gspread.utils.rowcol_to_a1(
             maxind + data_frame.shape[0], self.col_lookup.max()
         )
         cells = self.worksheet.range(start + ":" + end)
@@ -929,8 +929,8 @@ class Sheet:
         """Write the body of a data frame to a google doc."""
         # query needs to be set large enough to pull down relevant cells of sheet.
         row_number = self.header
-        start = self.worksheet.get_addr_int(row_number + 1, self.col_indent + 1)
-        end = self.worksheet.get_addr_int(
+        start = gspread.utils.rowcol_to_a1(row_number + 1, self.col_indent + 1)
+        end = gspread.utils.rowcol_to_a1(
             row_number + data_frame.shape[0],
             len(data_frame.columns) + self.col_indent + 1,
         )
@@ -966,8 +966,8 @@ class Sheet:
         if index_name == "" or index_name is None:
             index_name = "index"
         headers = [index_name] + list(data_frame.columns)
-        start = self.worksheet.get_addr_int(self.header, self.col_indent + 1)
-        end = self.worksheet.get_addr_int(
+        start = gspread.utils.rowcol_to_a1(self.header, self.col_indent + 1)
+        end = gspread.utils.rowcol_to_a1(
             self.header, len(data_frame.columns) + self.col_indent + 1
         )
         # Select a range
