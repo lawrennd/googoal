@@ -16,12 +16,12 @@ from setuptools import find_packages, setup, Command
 
 # Package meta-data.
 NAME = "goggles"
-DESCRIPTION = "Python software for Open Data Science"
-URL = "https://github.com/lawrennd/ods"
+DESCRIPTION = "Python software for interfacing with google services."
+URL = "https://github.com/lawrennd/goggles"
 EMAIL = "lawrennd@gmail.com"
 AUTHOR = "Neil D. Lawrence"
 REQUIRES_PYTHON = ">=3.6.0"
-VERSION = "v0.0.21-alpha"
+VERSION = "v0.0.1"
 
 # What packages are required for this module to be executed?
 REQUIRED = [
