@@ -1,8 +1,8 @@
-goggles
+googoal
 ===
 
 <p align="left">
-  <a href="https://github.com/lawrennd/goggles"><img alt="GitHub Actions status" src="https://github.com/lawrennd/goggles/workflows/code-tests/badge.svg"></a>
+  <a href="https://github.com/lawrennd/googoal"><img alt="GitHub Actions status" src="https://github.com/lawrennd/googoal/workflows/code-tests/badge.svg"></a>
 </p>
 
 Software for interfacing with Google Services. This code was originally incorporated with the `pods` software, but split out in May 2021.
