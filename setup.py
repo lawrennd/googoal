@@ -31,7 +31,6 @@ REQUIRED = [
     "gspread",
     "gdata",
     "google-api-python-client",
-    "notutils",
 ]
 
 # What packages are optional?
