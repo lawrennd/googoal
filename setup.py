@@ -15,9 +15,9 @@ from setuptools import find_packages, setup, Command
 
 
 # Package meta-data.
-NAME = "goggles"
+NAME = "googoal"
 DESCRIPTION = "Python software for interfacing with google services."
-URL = "https://github.com/lawrennd/goggles"
+URL = "https://github.com/lawrennd/googoal"
 EMAIL = "lawrennd@gmail.com"
 AUTHOR = "Neil D. Lawrence"
 REQUIRES_PYTHON = ">=3.6.0"
@@ -31,13 +31,14 @@ REQUIRED = [
     "gspread",
     "gdata",
     "google-api-python-client",
+    "notutils",
 ]
 
 # What packages are optional?
 EXTRAS = {
 }
 
-PACKAGE_DATA = {"goggles": ["defaults.yml"]}
+PACKAGE_DATA = {"googoal": ["defaults.yml"]}
 
 DEPENDENCY_LINKS = []
 

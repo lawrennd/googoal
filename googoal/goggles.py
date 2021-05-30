@@ -13,6 +13,10 @@ import httplib2
 import json
 import warnings
 
+import notutils as nu
+
+from collections import defaultdict
+
 from .config import *
 
 
@@ -25,9 +29,6 @@ else:
     table_id = None
     keyfile = None
 
-import pods.notebook as nb
-
-from collections import defaultdict
 
 NEW_OAUTH2CLIENT = False
 try:
@@ -1096,7 +1097,7 @@ class Sheet:
                 url=self.url, title=self.get_title()
             )
             url = self.url + "/pubhtml?widget=true&amp;headers=false"
-            return output + nb.iframe_url(url, width=500, height=300)
+            return output + nu.iframe_url(url, width=500, height=300)
         else:
             output = '<p><b>{title}</b> at <a href="{url}" target="_blank">this url.</a>\n</p>'.format(
                 url=self.url, title=self.get_title()
@@ -1113,7 +1114,7 @@ class Sheet:
                 from IPython.display import HTML
 
                 url = self.url + "/pubhtml?widget=true&amp;headers=false"
-                nb.iframe_url(url, width=width, height=height)
+                nu.iframe_url(url, width=width, height=height)
             except ImportError:
                 print(ds.url)
             else:
