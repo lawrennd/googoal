@@ -1,2 +1,2 @@
-from .goggles import *
+from .googoal import *
 from . import odsmail
