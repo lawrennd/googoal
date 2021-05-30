@@ -20,7 +20,7 @@ class Test_drive:
         cls.resource_two = googoal.Resource(
             name="Test file 2", mime_type=googoal.sheet_mime
         )
-        cls.sheet = googoal.sheet()
+        cls.sheet = googoal.Sheet()
 
     @classmethod
     def teardown_class(cls):
@@ -130,7 +130,7 @@ class Test_sheet:
         cls.resource = googoal.Resource(
             drive=cls.sheet_one.resource.drive, mime_type=googoal.sheet_mime
         )
-        cls.sheet_two = googoal.sheet(resource=cls.resource)
+        cls.sheet_two = googoal.Sheet(resource=cls.resource)
         import pods
         with mock.patch('builtins.input', "Y"):
             cls.data = pods.datasets.movie_body_count()
