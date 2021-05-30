@@ -25,10 +25,11 @@ VERSION = "v0.0.1"
 
 # What packages are required for this module to be executed?
 REQUIRED = [
+    "yaml",
+    "pandas",
+    "oauth2client",
     "gspread",
     "gdata",
-    "oauth2client",
-    "pandas",
     "google-api-python-client",
 ]
 
