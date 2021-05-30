@@ -78,7 +78,7 @@ class Test_drive:
 
     def test_create_sheet(self):
         """sheet_tests: Test code's ability to create sheets from existing resource."""
-        s = googoal.sheet(resource=self.resource_one)
+        s = googoal.Sheet(resource=self.resource_one)
 
     def test_delete(self):
         """sheet_tests: Test that a file can be deleted and undeleted (using trash)"""
@@ -126,7 +126,7 @@ class Test_sheet:
     def setup_class(cls):
         cls.col_indent = 3
         cls.header = 4
-        cls.sheet_one = googoal.sheet()
+        cls.sheet_one = googoal.Sheet()
         cls.resource = googoal.Resource(
             drive=cls.sheet_one.resource.drive, mime_type=googoal.sheet_mime
         )
