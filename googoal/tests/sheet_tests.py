@@ -13,11 +13,11 @@ class Test_drive:
 
     @classmethod
     def setup_class(cls):
-        cls.drive = googoal.drive()
-        cls.resource_one = googoal.resource(
+        cls.drive = googoal.Drive()
+        cls.resource_one = googoal.Resource(
             name="Test file", mime_type=googoal.sheet_mime
         )
-        cls.resource_two = googoal.resource(
+        cls.resource_two = googoal.Resource(
             name="Test file 2", mime_type=googoal.sheet_mime
         )
         cls.sheet = googoal.sheet()
@@ -31,11 +31,11 @@ class Test_drive:
     # Google drive tests
     def test_other_credentials(self):
         """sheet_tests: Test opening drive by sharing credentials"""
-        d = googoal.drive(credentials=self.drive.credentials)
+        d = googoal.Drive(credentials=self.drive.credentials)
 
     def test_existing_service(self):
         """sheet_tests: Test opening drive with existing service"""
-        d = googoal.drive(service=self.drive.service, http=self.drive.http)
+        d = googoal.Drive(service=self.drive.service, http=self.drive.http)
 
     def resource_listed(self, resource):
         resources = self.drive.ls()
@@ -126,13 +126,14 @@ class Test_sheet:
     def setup_class(cls):
         cls.col_indent = 3
         cls.header = 4
-        pods.datasets.override_manual_authorize = True
         cls.sheet_one = googoal.sheet()
-        cls.resource = googoal.resource(
+        cls.resource = googoal.Resource(
             drive=cls.sheet_one.resource.drive, mime_type=googoal.sheet_mime
         )
         cls.sheet_two = googoal.sheet(resource=cls.resource)
-        cls.data = pods.datasets.movie_body_count()
+        import pods
+        with mock.patch('builtins.input', "Y"):
+            cls.data = pods.datasets.movie_body_count()
 
         cls.sheet_two.write(cls.data["Y"])
         cls.sheet_two.resource.share(
