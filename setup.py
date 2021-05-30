@@ -30,7 +30,6 @@ REQUIRED = [
     "oauth2client",
     "pandas",
     "google-api-python-client",
-
 ]
 
 # What packages are optional?
