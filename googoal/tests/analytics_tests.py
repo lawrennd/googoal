@@ -64,9 +64,9 @@ class AnalyticsTester(unittest.TestCase):
         self.d = self.query(**self.kwargs)
 
 
-class AnalyticsTests(unittest.TestCase, *args, **kwargs):
+class AnalyticsTests(unittest.TestCase, **kwargs):
     def __init__(self):
-        super(AnalyticsTests, self).__init__(*args, **kwargs)
+        super(AnalyticsTests, self).__init__(**kwargs)
         # for queries in
 
     @classmethod
