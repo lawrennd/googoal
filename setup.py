@@ -29,7 +29,7 @@ REQUIRED = [
     "pandas",
     "oauth2client",
     "gspread",
-    "gdata",
+    "gdata-python3",
     "google-api-python-client",
 ]
 
