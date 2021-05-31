@@ -3,7 +3,7 @@ import unittest
 import pandas as pd
 import numpy as np
 
-import googoal
+import googoal as gl
 
 test_user = "opendsi.sheffield@gmail.com"
 
@@ -64,14 +64,14 @@ class AnalyticsTester(unittest.TestCase):
         self.d = self.query(**self.kwargs)
 
 
-class AnalyticsTests(unittest.TestCase, **kwargs):
+class AnalyticsTests(unittest.TestCase, *args, **kwargs):
     def __init__(self):
-        super(AnalyticsTests, self).__init__(**kwargs)
+        super(AnalyticsTests, self).__init__(*args, **kwargs)
         # for queries in
 
     @classmethod
     def setup_class(cls):
-        cls.analytics = googoal.analytics()
+        cls.analytics = gl.analytics.Analytics()
 
     @classmethod
     def teardown_class(cls):
@@ -80,11 +80,11 @@ class AnalyticsTests(unittest.TestCase, **kwargs):
     # Google analytics tests
     def test_other_credentials(self):
         """analytics_tests: Test opening analytics by sharing credentials"""
-        d = googoal.analytics(credentials=self.analytics.credentials)
+        d = gl.analytics.Analytics(credentials=self.analytics.credentials)
 
     def test_existing_service(self):
         """analytics_tests: Test opening analytics with existing service"""
-        d = googoal.analytics(
+        d = gl.analytics.Analytics(
             service=self.analytics.service, http=self.analytics.http
         )
 

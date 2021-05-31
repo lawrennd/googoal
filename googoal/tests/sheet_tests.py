@@ -3,7 +3,7 @@ from nose.tools import eq_, ok_
 import pandas as pd
 import numpy as np
 
-import googoal
+import googoal as gl
 
 test_user = "opendsi.sheffield@gmail.com"
 
@@ -13,14 +13,14 @@ class Test_drive:
 
     @classmethod
     def setup_class(cls):
-        cls.drive = googoal.Drive()
-        cls.resource_one = googoal.Resource(
-            name="Test file", mime_type=googoal.sheet_mime
+        cls.drive = gl.drive.Drive()
+        cls.resource_one = gl.Resource(
+            name="Test file", mime_type=gl.sheet.MIME
         )
-        cls.resource_two = googoal.Resource(
-            name="Test file 2", mime_type=googoal.sheet_mime
+        cls.resource_two = gl.Resource(
+            name="Test file 2", mime_type=gl.sheet.MIME
         )
-        cls.sheet = googoal.Sheet()
+        cls.sheet = gl.sheet.Sheet()
 
     @classmethod
     def teardown_class(cls):
@@ -31,11 +31,11 @@ class Test_drive:
     # Google drive tests
     def test_other_credentials(self):
         """sheet_tests: Test opening drive by sharing credentials"""
-        d = googoal.Drive(credentials=self.drive.credentials)
+        d = gl.drive.Drive(credentials=self.drive.credentials)
 
     def test_existing_service(self):
         """sheet_tests: Test opening drive with existing service"""
-        d = googoal.Drive(service=self.drive.service, http=self.drive.http)
+        d = gl.drive.Drive(service=self.drive.service, http=self.drive.http)
 
     def resource_listed(self, resource):
         resources = self.drive.ls()
@@ -78,7 +78,7 @@ class Test_drive:
 
     def test_create_sheet(self):
         """sheet_tests: Test code's ability to create sheets from existing resource."""
-        s = googoal.Sheet(resource=self.resource_one)
+        s = gl.sheet.Sheet(resource=self.resource_one)
 
     def test_delete(self):
         """sheet_tests: Test that a file can be deleted and undeleted (using trash)"""
@@ -115,7 +115,7 @@ class Test_drive:
         """sheet_tests: Test that mime_type of file is correct."""
         eq_(
             self.sheet.resource.get_mime_type(),
-            googoal.sheet_mime,
+            gl.sheet_mime,
             msg="Mime type of google spread sheet does not match expectation.",
         )
 
@@ -126,11 +126,11 @@ class Test_sheet:
     def setup_class(cls):
         cls.col_indent = 3
         cls.header = 4
-        cls.sheet_one = googoal.Sheet()
-        cls.resource = googoal.Resource(
-            drive=cls.sheet_one.resource.drive, mime_type=googoal.sheet_mime
+        cls.sheet_one = gl.sheet.Sheet()
+        cls.resource = gl.Resource(
+            drive=cls.sheet_one.resource.drive, mime_type=gl.sheet_mime
         )
-        cls.sheet_two = googoal.Sheet(resource=cls.resource)
+        cls.sheet_two = gl.sheet.Sheet(resource=cls.resource)
         import pods
         with mock.patch('builtins.input', "Y"):
             cls.data = pods.datasets.movie_body_count()
@@ -140,7 +140,7 @@ class Test_sheet:
             ["lawrennd@gmail.com", "N.Lawrence@sheffield.ac.uk"]
         )
 
-        cls.sheet_three = googoal.sheet(
+        cls.sheet_three = gl.sheet.Sheet(
             col_indent=cls.col_indent, header=cls.header
         )
         cls.sheet_three.write(cls.data["Y"])
@@ -157,18 +157,18 @@ class Test_sheet:
             columns=["dog", "flea", "cat"],
             index=["a", "b", "c", "d", "e", "f"],
         )
-        cls.update_sheet = googoal.sheet(
+        cls.update_sheet = gl.sheet.Sheet(
             col_indent=cls.col_indent, header=cls.header
         )
         cls.update_sheet.write(cls.data_two)
 
-        cls.update_sheet_two = googoal.sheet()
+        cls.update_sheet_two = gl.sheet.Sheet()
         cls.update_sheet_two.write(cls.data_two)
 
-        cls.update_sheet_three = googoal.sheet()
+        cls.update_sheet_three = gl.sheet.Sheet()
         cls.update_sheet_three.write(cls.data_two)
 
-        cls.update_sheet_four = googoal.sheet()
+        cls.update_sheet_four = gl.sheet.Sheet()
         cls.update_sheet_four.write(cls.data_two)
 
     @classmethod

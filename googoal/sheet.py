@@ -7,8 +7,10 @@ import pandas as pd
 import gspread
 
 from .config import *
-from .drive import *
-from .util import *
+from .drive import Drive
+from .util import iframe_url
+
+MIME = "application/vnd.google-apps.spreadsheet"
 
 class Sheet():
     """
@@ -59,7 +61,7 @@ class Sheet():
         if resource is None:
             drive = Drive(scope=scope)
             self.resource = Resource(
-                drive=drive, name="Google Sheet", mime_type=sheet_mime
+                drive=drive, name="Google Sheet", mime_type=MIME
             )
         else:
             if "https://spreadsheets.google.com/feeds" not in resource.drive.scope:

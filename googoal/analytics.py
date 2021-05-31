@@ -2,19 +2,20 @@ import sys
 import os
 import re
 
+import httplib2
+import json
+import warnings
+import types
 
 import pandas as pd
 import numpy as np
 
-import httplib2
-
-import json
-import warnings
-
 from collections import defaultdict
+from googleapiclient.discovery import build
+
 
 from .config import *
-
+from .googoal import Google_service
 
 if "oauth2_keyfile" in config:  # Check if config file is set up
     keyfile = os.path.expanduser(
@@ -41,14 +42,6 @@ except ImportError:
     except ImportError:
         api_available = False
 
-from googleapiclient import errors
-from googleapiclient.discovery import build
-from googleapiclient.http import BatchHttpRequest
-from googleapiclient import sample_tools
-from googleapiclient import discovery
-
-import types
-import gspread
 
 query_filters = []
 query_filters.append(
@@ -111,50 +104,6 @@ query_filters.append(
     }
 )
 
-
-sheet_mime = "application/vnd.google-apps.spreadsheet"
-
-
-class Google_service:
-    """Base class for accessing a google service"""
-
-    # Get a google API connection.
-    def __init__(self, scope=None, credentials=None, http=None, service=None):
-        if service is None:
-            if http is None:
-                if credentials is None:
-                    if keyfile is not None:
-                        if os.path.exists(keyfile):
-                            with open(keyfile) as file:
-                                self._oauthkey = json.load(file)
-                            self.email = self._oauthkey["client_email"]
-                            self.key = bytes(self._oauthkey["private_key"], "UTF-8")
-                            self.scope = scope
-
-                            if NEW_OAUTH2CLIENT:
-                                self.credentials = ServiceAccountCredentials.from_json_keyfile_name(
-                                    os.path.join(keyfile), self.scope
-                                )
-                                # self.credentials = ServiceAccountCredentials.from_p12_keyfile(self.email, self.keyos.path.join(keyfile), self.scope)
-                            else:
-                                self.credentials = SignedJwtAssertionCredentials(
-                                    self.email, self.key, self.scope
-                                )
-                        else:
-                            raise FileNotFoundError("keyfile " + file + " not found, update its location in _googoal.yml")
-                    else:
-                        raise Exception("No keyfile entry provided in config file for OAuth 2.0 access, see https://developers.google.com/identity/protocols/oauth2 to find out how to generate the file and place entry in _googoal.yml")
-                else:
-                    self.credentials = credentials
-                    self.key = None
-                    self.email = None
-
-                http = httplib2.Http()
-                self.http = self.credentials.authorize(http)
-            else:
-                self.http = http
-        else:
-            self.service = service
 
 def gqf_(
     name=None,
