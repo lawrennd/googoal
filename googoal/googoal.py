@@ -1,5 +1,3 @@
-# Copyright 2014 Open Data Science Initiative and other authors. See AUTHORS.txt
-# Licensed under the BSD 3-clause license (see LICENSE.txt)
 import sys
 import os
 import re
@@ -18,14 +16,17 @@ from collections import defaultdict
 from .config import *
 
 
-if "google" in config:  # Check if config file is set up
+if "oauth2_keyfile" in config:  # Check if config file is set up
     keyfile = os.path.expanduser(
-        os.path.expandvars(config["google"]["oauth2_keyfile"])
+        os.path.expandvars(config["oauth2_keyfile"])
     )
-    table_id = os.path.expandvars(config["google"]["analytics_table"])
 else:
-    table_id = None
     keyfile = None
+
+if "table_id" in config:
+    table_id = os.path.expandvars(config["analytics_table"])
+else: 
+    table_id = None
 
 
 NEW_OAUTH2CLIENT = False
@@ -47,7 +48,6 @@ from googleapiclient import sample_tools
 from googleapiclient import discovery
 
 import types
-
 import gspread
 
 query_filters = []
