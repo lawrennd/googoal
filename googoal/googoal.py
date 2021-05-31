@@ -4,10 +4,13 @@ import json
 
 from .config import *
 
-if "oauth2_keyfile" in config:  # Check if config file is set up
-    keyfile = os.path.expanduser(
-        os.path.expandvars(config["oauth2_keyfile"])
-    )
+if "google" in config:
+    if "oauth2_keyfile" in config["google"]:  # Check if config file is set up
+        keyfile = os.path.expanduser(
+            os.path.expandvars(config["oauth2_keyfile"])
+        )
+    else:
+        keyfile = None
 else:
     keyfile = None
 
