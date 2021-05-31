@@ -7,7 +7,7 @@ from .config import *
 if "google" in config:
     if "oauth2_keyfile" in config["google"]:  # Check if config file is set up
         keyfile = os.path.expanduser(
-            os.path.expandvars(config["oauth2_keyfile"])
+            os.path.expandvars(config["google"]["oauth2_keyfile"])
         )
     else:
         keyfile = None
