@@ -17,16 +17,13 @@ from googleapiclient.discovery import build
 from .config import *
 from .googoal import Google_service
 
-if "oauth2_keyfile" in config:  # Check if config file is set up
-    keyfile = os.path.expanduser(
-        os.path.expandvars(config["oauth2_keyfile"])
-    )
-else:
-    keyfile = None
 
-if "table_id" in config:
-    table_id = os.path.expandvars(config["analytics_table"])
-else: 
+if "google" in config:
+    if "table_id" in config["google"]:
+        table_id = os.path.expandvars(config["google"]["analytics_table"])
+    else: 
+        table_id = None
+else:
     table_id = None
 
 
