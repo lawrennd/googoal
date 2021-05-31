@@ -9,7 +9,7 @@ Software for interfacing with Google Services. This code was originally incorpor
 
 
 To access a spreadsheet from the script, you need to follow the
-protocol for Oauth 2.0, the process is described (here)[https://developers.google.com/identity/protocols/OAuth2]
+protocol for Oauth 2.0, the process is described [here](https://developers.google.com/identity/protocols/OAuth2)
 
 Once you have the key file, you can specify its location in the
 `.ods_user.cfg` file, using for example
