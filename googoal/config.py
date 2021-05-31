@@ -2,8 +2,8 @@ import os
 import yaml
 
 default_file = os.path.join(os.path.dirname(__file__), "defaults.yml")
-local_file = os.path.abspath(os.path.join(os.path.dirname(__file__), "machine.cfg"))
-user_file = '_goggles.yml'
+local_file = os.path.abspath(os.path.join(os.path.dirname(__file__), "machine.yml"))
+user_file = '_googoal.yml'
 
 config = {}
 
