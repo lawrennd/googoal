@@ -1,54 +1,14 @@
-import sys
-import os
-import re
-
-
-import pandas as pd
-import numpy as np
-
-import httplib2
-
-import json
 import warnings
-
 from collections import defaultdict
 
-from .config import *
+import numpy as np
+import pandas as pd
 
-
-if "oauth2_keyfile" in config:  # Check if config file is set up
-    keyfile = os.path.expanduser(
-        os.path.expandvars(config["oauth2_keyfile"])
-    )
-else:
-    keyfile = None
-
-if "table_id" in config:
-    table_id = os.path.expandvars(config["analytics_table"])
-else: 
-    table_id = None
-
-
-NEW_OAUTH2CLIENT = False
-try:
-    # See this change: https://github.com/google/oauth2client/issues/401
-    from oauth2client.service_account import ServiceAccountCredentials
-
-    NEW_OAUTH2CLIENT = True
-except ImportError:
-    try:
-        from oauth2client.client import SignedJwtAssertionCredentials
-    except ImportError:
-        api_available = False
-
-from googleapiclient import errors
-from googleapiclient.discovery import build
-from googleapiclient.http import BatchHttpRequest
-from googleapiclient import sample_tools
-from googleapiclient import discovery
-
-import types
 import gspread
+
+from .config import *
+from .drive import *
+from .util import *
 
 class Sheet():
     """
