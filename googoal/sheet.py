@@ -7,7 +7,7 @@ import pandas as pd
 import gspread
 
 from .config import *
-from .drive import Drive
+from .drive import Drive, Resource
 from .util import iframe_url
 
 MIME = "application/vnd.google-apps.spreadsheet"
