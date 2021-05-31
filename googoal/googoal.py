@@ -152,22 +152,27 @@ class Google_service:
         if service is None:
             if http is None:
                 if credentials is None:
-                    with open(os.path.join(keyfile)) as file:
-                        self._oauthkey = json.load(file)
-                    self.email = self._oauthkey["client_email"]
-                    self.key = bytes(self._oauthkey["private_key"], "UTF-8")
-                    self.scope = scope
+                    if keyfile is not None:
+                        if os.path.exists(keyfile):
+                            with open(keyfile) as file:
+                                self._oauthkey = json.load(file)
+                            self.email = self._oauthkey["client_email"]
+                            self.key = bytes(self._oauthkey["private_key"], "UTF-8")
+                            self.scope = scope
 
-                    if NEW_OAUTH2CLIENT:
-                        self.credentials = ServiceAccountCredentials.from_json_keyfile_name(
-                            os.path.join(keyfile), self.scope
-                        )
-                        # self.credentials = ServiceAccountCredentials.from_p12_keyfile(self.email, self.keyos.path.join(keyfile), self.scope)
+                            if NEW_OAUTH2CLIENT:
+                                self.credentials = ServiceAccountCredentials.from_json_keyfile_name(
+                                    os.path.join(keyfile), self.scope
+                                )
+                                # self.credentials = ServiceAccountCredentials.from_p12_keyfile(self.email, self.keyos.path.join(keyfile), self.scope)
+                            else:
+                                self.credentials = SignedJwtAssertionCredentials(
+                                    self.email, self.key, self.scope
+                                )
+                        else:
+                            raise FileNotFoundError("keyfile " + file + " not found, update its location in _googoal.yml")
                     else:
-                        self.credentials = SignedJwtAssertionCredentials(
-                            self.email, self.key, self.scope
-                        )
-
+                        raise Exception("No keyfile entry provided in config file for OAuth 2.0 access, see https://developers.google.com/identity/protocols/oauth2 to find out how to generate the file and place entry in _googoal.yml")
                 else:
                     self.credentials = credentials
                     self.key = None
