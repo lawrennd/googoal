@@ -15,6 +15,6 @@ Once you have the key file, you can specify its location in the
 `_googoal.yml` file, using for example
 
 ```
-# Set the email address of an account to access google doc information.
+# Set the location of the credentials to use for access.
 oauth2_keyfile: $HOME/oauth2-key-file-name.json
 ```
