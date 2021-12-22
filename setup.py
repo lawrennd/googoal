@@ -25,7 +25,7 @@ VERSION = "v0.0.1"
 
 # What packages are required for this module to be executed?
 REQUIRED = [
-    "PyYAML",
+    "PyYAML>=5.1",
     "pandas",
     "oauth2client",
     "gspread",
