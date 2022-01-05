@@ -3,26 +3,35 @@ import httplib2
 import json
 
 from .config import *
+from .log import Logger
+
 
 from googleapiclient import errors
 from googleapiclient.discovery import build
 from googleapiclient.http import BatchHttpRequest
+from googleapiclient.errors import HttpError
 
 from .googoal import Google_service
+
+log = Logger(
+    name=__name__,
+    level=config["logging"]["level"],
+    filename=config["logging"]["filename"]
+)
 
 class Drive(Google_service):
     """
     Class for accessing a google drive and managing files.
     """
 
-    def __init__(self, scope=None, credentials=None, http=None, service=None):
+    def __init__(self, scope=None, credentials=None, service=None):
         if scope is None:
-            scope = ["https://www.googleapis.com/auth/drive"]
+            scope = ["https://www.googleapis.com/auth/drive.metadata"]
         Google_service.__init__(
-            self, scope=scope, credentials=credentials, http=http, service=service
+            self, scope=scope, credentials=credentials, service=service
         )
         if service is None:
-            self.service = build("drive", "v2", http=self.http)
+            self.service = build("drive", "v3", credentials=self.credentials)
 
     def ls(self):
         """List all resources on the google drive"""
@@ -33,22 +42,20 @@ class Drive(Google_service):
             if page_token:
                 param["pageToken"] = page_token
             files = self.service.files().list(**param).execute()
-            results.extend(files["items"])
+            results.extend(files["files"])
             page_token = files.get("nexPageToken")
             if not page_token:
                 break
         files = []
         for result in results:
-            if not result["labels"]["trashed"]:
-                files.append(
-                    Resource(
-                        id=result["id"],
-                        name=result["title"],
-                        mime_type=result["mimeType"],
-                        url=result["alternateLink"],
-                        drive=self,
-                    )
+            files.append(
+                Resource(
+                    id=result["id"],
+                    name=result["name"],
+                    mime_type=result["mimeType"],
+                    drive=self,
                 )
+            )
         return files
 
     def _repr_html_(self):
@@ -65,7 +72,7 @@ class Resource:
     :param id: the google id of the spreadsheet to open (default is None which creates a new spreadsheet).
     """
 
-    def __init__(self, name=None, mime_type=None, url=None, id=None, drive=None):
+    def __init__(self, name=None, mime_type=None, id=None, drive=None):
 
         if drive is None:
             self.drive = Drive()
@@ -76,19 +83,22 @@ class Resource:
             if name is None:
                 name = "Google Drive Resource"
             # create a new sheet
-            body = {"mimeType": mime_type, "title": name}
+            body = {"mimeType": mime_type, "name": name}
+            log.info(f"Creating new file of type {mime_type} and name {name}")
             try:
-                self.drive.service.files().insert(body=body).execute(
-                    http=self.drive.http
-                )
-            except (errors.HttpError):
-                print("Http error")
+                self.drive.service.files().create(body=body).execute()
+            except HttpError as error:
+                raise Exception(f"Cannot access service: {error}")
 
-            self._id = (
-                self.drive.service.files()
-                .list(q="title='" + name + "'")
-                .execute(http=self.drive.http)["items"][0]["id"]
-            )
+            try:
+                self._id = (
+                    self.drive.service.files()
+                    .list(q="name='" + name + "'")
+                    .execute()["files"][0]["id"]
+                )
+            except HttpError as error:
+                raise Exception(f"Cannot access service: {error}")
+
             self.name = name
             self.mime_type = mime_type
         else:
@@ -101,21 +111,20 @@ class Resource:
                 self.get_mime_type()
             else:
                 self.mime_type = mime_type
-            if url is None:
-                self.get_url()
-            else:
-                self.url = url
+            self.get_url()
 
     def delete(self, empty_bin=False):
         """Delete the file from drive."""
         if empty_bin:
             self.drive.service.files().delete(fileId=self._id).execute()
         else:
-            self.drive.service.files().trash(fileId=self._id).execute()
+            body = {"trashed": True}
+            self.drive.service.files().update(fileId=self._id, body=body).execute()
 
     def undelete(self):
         """Recover file from the trash (if it's there)."""
-        self.drive.service.files().untrash(fileId=self._id).execute()
+        body = {"trashed": False}
+        self.drive.service.files().update(fileId=self._id, body=body).execute()
 
     def share(
         self,
@@ -138,17 +147,13 @@ class Resource:
             if exception:
                 raise exception
 
-        batch_request = BatchHttpRequest(callback=batch_callback)
         for count, user in enumerate(users):
-            batch_entry = self.drive.service.permissions().insert(
+            self.drive.service.permissions().create(
                 fileId=self._id,
-                sendNotificationEmails=send_notifications,
+                sendNotificationEmail=send_notifications,
                 emailMessage=email_message,
-                body={"value": user, "type": "user", "role": share_type},
-            )
-            batch_request.add(batch_entry, request_id="batch" + str(count))
-
-        batch_request.execute()
+                body={"emailAddress": user, "type": "user", "role": share_type},
+            ).execute()
 
     def share_delete(self, user):
         """
@@ -171,34 +176,31 @@ class Resource:
             raise ValueError("Share type should be 'writer', 'reader' or 'owner'")
 
         permission_id = self._permission_id(user)
-        permission = (
-            self.drive.service.permissions()
-            .get(fileId=self._id, permissionId=permission_id)
-            .execute()
-        )
-        permission["role"] = share_type
+        body = {"role": share_type}
         self.drive.service.permissions().update(
-            fileId=self._id, permissionId=permission_id, body=permission
+            fileId=self._id,
+            permissionId=permission_id,
+            body=body,
         ).execute()
 
     def _permission_id(self, user):
 
-        return (
-            self.drive.service.permissions()
-            .getIdForEmail(email=user)
-            .execute()["id"]
-        )
+        permissions = self.drive.service.permissions().list(fileId=self._id, fields="permissions").execute()["permissions"]
+        for permission in permissions:
+            if user == permission["emailAddress"]:
+                return permission["id"]
+        raise ValueError(f"User {user} not found in permissions of sheet {self._id}")
 
     def share_list(self):
         """
         Provide a list of all users who can access the document in the form of 
         """
         permissions = (
-            self.drive.service.permissions().list(fileId=self._id).execute()
+            self.drive.service.permissions().list(fileId=self._id, fields = "permissions").execute()["permissions"]
         )
 
         entries = []
-        for permission in permissions["items"]:
+        for permission in permissions:
             entries.append((permission["emailAddress"], permission["role"]))
         return entries
 
@@ -207,17 +209,17 @@ class Resource:
         Get the revision history of the document from Google Docs.
         """
         for item in (
-            self.drive.service.revisions().list(fileId=self._id).execute()["items"]
+            self.drive.service.revisions().list(fileId=self._id).execute()["files"]
         ):
             print(item["published"], item["selfLink"])
 
     def update_name(self, name):
-        """Change the title of the file."""
-        body = self.drive.service.files().get(fileId=self._id).execute()
-        body["title"] = name
-        body = (
-            self.drive.service.files().update(fileId=self._id, body=body).execute()
-        )
+        """Change the name of the file."""
+        body= {"name": name}
+        self.drive.service.files().update(
+            fileId=self._id,
+            body=body
+        ).execute()
         self.name = name
 
     def get_mime_type(self):
@@ -225,25 +227,23 @@ class Resource:
 
         details = (
             self.drive.service.files()
-            .list(q="title='" + self.name + "'")
-            .execute(http=self.drive.http)["items"][0]
+            .list(q="name='" + self.name + "'")
+            .execute()["files"][0]
         )
         self.mime_type = details["mimeType"]
         return self.mime_type
 
     def get_name(self):
-        """Get the title of the file."""
+        """Get the name of the file."""
         self.name = (
-            self.drive.service.files().get(fileId=self._id).execute()["title"]
+            self.drive.service.files().get(fileId=self._id, fields="name").execute()["name"]
         )
         return self.name
 
     def get_url(self):
-        self.url = (
-            self.drive.service.files()
-            .get(fileId=self._id)
-            .execute()["alternateLink"]
-        )
+        d = self.drive.service.files().get(fileId=self._id, fields="webViewLink").execute()
+        self.url = d["webViewLink"]
+        
         return self.url
 
     def update_drive(self, drive):
@@ -251,8 +251,8 @@ class Resource:
         self.drive = drive
 
     def _repr_html_(self):
-        output = '<p><b>{title}</b> at <a href="{url}" target="_blank">this url.</a> ({mime_type})</p>'.format(
-            url=self.url, title=self.name, mime_type=self.mime_type
+        output = '<p><b>{name}</b> at <a href="{url}" target="_blank">this url.</a> ({mime_type})</p>'.format(
+            url=self.url, name=self.name, mime_type=self.mime_type
         )
         return output
 

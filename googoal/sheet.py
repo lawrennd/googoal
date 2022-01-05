@@ -7,8 +7,16 @@ import pandas as pd
 import gspread
 
 from .config import *
+from .log import Logger
 from .drive import Drive, Resource
 from .util import iframe_url
+
+log = Logger(
+    name=__name__,
+    level=config["logging"]["level"],
+    filename=config["logging"]["filename"]
+)
+
 
 MIME = "application/vnd.google-apps.spreadsheet"
 
@@ -33,23 +41,27 @@ class Sheet():
     """
 
     def __init__(
-        self,
-        resource=None,
-        gs_client=None,
-        worksheet_name=None,
-        index_field=None,
-        col_indent=0,
-        na_values=["nan"],
-        dtype={},
-        raw_values=False,
-        header=1,
+            self,
+            resource=None,
+            gs_client=None,
+            name=None,
+            worksheet_name=None,
+            index_field=None,
+            col_indent=0,
+            na_values=["nan"],
+            dtype={},
+            raw_values=False,
+            header=1,
     ):
-
         source = "ODS Gdata Bot"
-        scope = [
-            "https://spreadsheets.google.com/feeds",
+        scope = ["https://www.googleapis.com/auth/spreadsheets",
             "https://www.googleapis.com/auth/drive",
         ]
+        if name is None:
+            self.name = "Google Sheet"
+        else:
+            self.name = name
+        log.info(f"Creating new spreadsheet {self.name}.")
         self.raw_values = raw_values
         self.header = header
         self.index_field = None
@@ -61,10 +73,10 @@ class Sheet():
         if resource is None:
             drive = Drive(scope=scope)
             self.resource = Resource(
-                drive=drive, name="Google Sheet", mime_type=MIME
+                drive=drive, name=self.name, mime_type=MIME
             )
         else:
-            if "https://spreadsheets.google.com/feeds" not in resource.drive.scope:
+            if "https://www.googleapis.com/auth/spreadsheets" not in resource.drive.scope:
                 drive = Drive(scope=scope)
                 resource.update_drive(drive)
             self.resource = resource
@@ -681,8 +693,9 @@ class Sheet():
 
     def ispublished(self):
         """Find out whether or not the spreadsheet has been published."""
+        return False
         return (
             self.resource.drive.service.revisions()
             .list(fileId=self.resource._id)
-            .execute()["items"][-1]["published"]
+            .execute()["files"][-1]["published"]
         )

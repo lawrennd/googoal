@@ -3,12 +3,19 @@ import httplib2
 import json
 
 from .config import *
+from .log import Logger
 
 from google.oauth2.credentials import Credentials
 from google.auth.transport.requests import Request
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
+
+log = Logger(
+    name=__name__,
+    level=config["logging"]["level"],
+    filename=config["logging"]["filename"]
+)
 
 
 if "google" in config:
@@ -26,13 +33,15 @@ class Google_service:
     """Base class for accessing a google service"""
 
     # Get a google API connection.
-    def __init__(self, scope=None, credentials=None, http=None, service=None):
+    def __init__(self, scope=None, credentials=None, service=None):
         # The file token.json stores the user's access and refresh tokens, and is
         # created automatically when the authorization flow completes for the first
         # time.
+        self.scope = scope
         if credentials is None:
             if os.path.exists("token.json"):
-                self.credentials = Credentials.from_authorized_user_file("token.json", SCOPES)
+                log.info("Loading credentials from 'token.json'")
+                self.credentials = Credentials.from_authorized_user_file("token.json", self.scope)
             else:
                 self.credentials = False
         else:
@@ -40,13 +49,15 @@ class Google_service:
 
         if not self.credentials or not self.credentials.valid:
             if self.credentials and self.credentials.expired and self.credentials.refresh_token:
+                log.info("Requestion credentials refresh.")
                 self.credentials.refresh(Request())
             else:
                 if KEYFILE is not None:
                     if os.path.exists(KEYFILE):
+                        log.info(f"Using {KEYFILE} to request credentials.")
                         self.flow = InstalledAppFlow.from_client_secrets_file(
                             KEYFILE,
-                            SCOPES
+                            self.scope
                         )
                         self.credentials = self.flow.run_local_server(port=0)
                         # Save credentials for next run
@@ -64,9 +75,4 @@ class Google_service:
         else:
             self.service = service
             
-        if http is None:
-            http = httplib2.Http()
-            self.http = self.credentials.authorize(http)
-        else:
-            self.http = http
 

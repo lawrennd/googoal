@@ -19,6 +19,7 @@ if os.path.exists(user_file):
     with open(user_file) as file:
         config.update(yaml.load(file, Loader=yaml.FullLoader))
 
+        
 if config=={}:
     raise ValueError(
         "No configuration file found at either "
@@ -30,3 +31,11 @@ if config=={}:
         + "."
     )
 
+if "logging" in config:
+    if not "level" in config["logging"]:
+        config["logging"]["level"] = 20
+    
+    if not "filename" in config["logging"]:
+        config["logging"]["filename"] = "googoal.log"
+else:
+    config["logging"] = {"level": 20, "filename": "googoal.log"}
