@@ -27,10 +27,12 @@ VERSION = "v0.0.1"
 REQUIRED = [
     "PyYAML>=5.1",
     "pandas",
-    "oauth2client",
+#    "oauth2client",
     "gspread",
     "gdata-python3",
     "google-api-python-client",
+    "google-auth-httplib2",
+    "google-auth-oauthlib",
 ]
 
 # What packages are optional?
