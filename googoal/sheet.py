@@ -87,16 +87,16 @@ class Sheet():
         else:
             self.gs_client = gs_client
 
-        self.sheet = self.gs_client.open_by_key(self.resource._id)
+        self.sheet = self.gs_client.open_by_key(self.id)
 
         if worksheet_name is None:
             self.worksheet = self.sheet.worksheets()[0]
         else:
             self.worksheet = self.sheet.worksheet(title=worksheet_name)
         self.col_indent = col_indent
-        self.url = (
-            "https://docs.google.com/spreadsheets/d/" + self.resource._id + "/"
-        )
+        self.url = f"https://docs.google.com/spreadsheets/d/{self.id}/"
+        self.embedurl = f"https://docs.google.com/spreadsheets/d/e/{self.id}/pubhtml?widget=true&amp;headers=false"
+        
 
     #############################################################################
     # Place methods here that are really associated with individual worksheets. #
@@ -190,14 +190,12 @@ class Sheet():
         """
         if not data_frame.index.is_unique:
             raise ValueError(
-                "Index for data_frame is not unique in Google spreadsheet "
+                "Index for data_frame is not unique in provided data frame for spreadsheet "
                 + self.url
             )
         ss = self.read()
         if not ss.index.is_unique:
-            raise ValueError(
-                "Index in sheet is not unique in Google spreadsheet " + self.url
-            )
+            raise ValueError(f"Index in sheet is not unique in Google spreadsheet {self.url}")
         if columns is None:
             columns = ss.columns
         if (
@@ -205,10 +203,7 @@ class Sheet():
             or len(set(data_frame.columns) - set(ss.columns)) > 0
         ):
             # TODO: Have a lazy option that doesn't mind this mismatch and accounts for it.
-            raise ValueError(
-                "There is a mismatch between columns in online spreadsheet and the data frame we are using to update in Google spreadsheet "
-                + self.url
-            )
+            raise ValueError(f"There is a mismatch between columns in online spreadsheet and the data frame we are using to update in the Google spreadsheet {self.url}")
 
         add_row = []
         remove_row = []
@@ -219,12 +214,16 @@ class Sheet():
                 for column in columns:
                     ss_val = ss[column][index]
                     df_val = data_frame[column][index]
+                    ty = type(df_val)
+                    log.info(f"value is {df_fal} type is {ty}")
                     if overwrite:
                         if not ss_val == df_val:
                             update_triples.append((index, column, df_val))
                     else:
-                        if (pd.isnull(ss_val) or ss_val == "") and not (
-                            pd.isnull(df_val) or df_val == ""
+                        if (
+                                (pd.isnull(ss_val) or ss_val == "")
+                                and not
+                                (pd.isnull(df_val) or df_val == "")
                         ):
                             update_triples.append((index, column, df_val))
 
@@ -255,16 +254,15 @@ class Sheet():
         cells = []
         for index, column, val in update_triples:
             cell = self._cell(index, column)
-            if self.raw_values:
-                cell.input_value = val
-            else:
-                cell.value = val
+            cell = self._set_cell_val(cell, val)
             cells.append(cell)
 
         for add, rem in swap_list:
             cells.extend(
                 self._overwrite_row(
-                    index=rem, new_index=add, data_series=data_frame.loc[add]
+                    index=rem,
+                    new_index=add,
+                    data_series=data_frame.loc[add],
                 )
             )
 
@@ -272,8 +270,14 @@ class Sheet():
             cells.extend(self._delete_rows(index_to_rem))
         if index_to_add:
             cells.extend(self._add_rows(data_frame.loc[index_to_add]))
+            
+        self._update_cells(cells)
 
+    def _update_cells(self, cells):
         self.worksheet.update_cells(cells)
+
+    def _update_cell(self, row, col, val):
+        self.worksheet.update_cell(row, col, val)
 
     def _update_row_lookup(self, index):
         """Update the data series to be used as a look-up to find row associated with each index.
@@ -307,10 +311,7 @@ class Sheet():
                 val = new_index
             else:
                 val = None
-            if self.raw_values:
-                cell.input_value = val
-            else:
-                cell.value = val
+            cell = self._set_cell_val(cell, val)
             cells.append(cell)
         return cells
 
@@ -334,13 +335,8 @@ class Sheet():
         # download existing values
         data = defaultdict(lambda: defaultdict(str))
         for cell in cells:
-            if self.raw_values:
-                val = cell.input_value
-            else:
-                val = cell.value
-
             row = data.setdefault(int(cell.row), defaultdict(str))
-            row[cell.col] = val
+            row[cell.col] = self._get_cell_val(cell)
         delete_rows = self.row_lookup[index].sort_values(inplace=False)
         # Find the ends of the banks to move up
         end_step = []
@@ -357,19 +353,12 @@ class Sheet():
                     and cell.row <= end_step[i]
                     and cell.row >= end_step[i - 1]
                 ):
-                    val = data[cell.row + 1 + i][cell.col]
-                    if self.raw_values:
-                        cell.input_value = val
-                    else:
-                        cell.value = val
+                    cell = self._set_cell_val(cell, data[cell.row + 1 + i][cell.col])
 
         # Delete exposed rows at bottom
         for cell in cells:
             if cell.row > end_step[-1]:
-                if self.raw_values:
-                    cell.input_value = ""
-                else:
-                    cell.value = ""
+                cell = self._set_cell_val(cell, "")
 
         # Update the row lookups
         for i, ind in enumerate(delete_rows.index):
@@ -377,6 +366,15 @@ class Sheet():
             self.row_lookup.drop(ind, inplace=True)
 
         return cells
+
+    def _rowcol_to_a1(self, row, col):
+        return gspread.utils.rowcol_to_a1(row, col)
+
+    def _rowcols_range(self, start, end):
+        """Return a group of cells from the given start and end coordinates."""
+        begin = self._rowcol_to_a1(*start)
+        finish = self._rowcol_to_a1(*end)
+        return self.worksheet.range(begin + ":" + finish)
 
     def _add_rows(self, data_frame):
         """
@@ -391,11 +389,10 @@ class Sheet():
         maxind = self.row_lookup.max()
         for i, ind in enumerate(self.row_lookup.index):
             self.row_lookup[ind] = maxind + 1 + i
-        start = gspread.utils.rowcol_to_a1(maxind + 1, self.col_lookup.min())
-        end = gspread.utils.rowcol_to_a1(
-            maxind + data_frame.shape[0], self.col_lookup.max()
+        cells = self._rowcols_range(
+            start = (maxind + 1, self.col_lookup.min()),
+            end = (maxind + data_frame.shape[0], self.col_lookup.max())
         )
-        cells = self.worksheet.range(start + ":" + end)
         for cell in cells:
             if cell.value != "":
                 raise ValueError("Overwriting non-empty cell in spreadsheet")
@@ -407,28 +404,41 @@ class Sheet():
             else:
                 column = data_frame.columns[j]
                 val = data_frame[column][index]
-            if self.raw_values:
-                cell.input_value = val
-            else:
-                cell.value = val
+            cell = self._set_cell_val(cell, val)
         for i, ind in enumerate(data_frame.index):
             self.row_lookup[ind] = maxind + 1 + i
         return cells
 
+    def _get_cell_val(self, cell):
+        """Get the cell value"""
+        if self.raw_values:
+            return cell.input_value
+        else:
+            return cell.value
+
+    def _set_cell_val(self, cell, val):
+        """Set the cell value"""
+        # gspread doesn't handle writing NaN, replace with empty.
+        if pd.isna(val):
+            val = ''
+        if self.raw_values:
+            cell.input_value = val
+        else:
+            cell.value = val
+        return cell
+    
     def write_comment(self, comment, row=1, col=1):
         """Write a comment in the given cell"""
-        self.worksheet.update_cell(row, col, comment)
+        self._update_cell(row, col, comment)
 
     def write_body(self, data_frame, nan_val=""):
         """Write the body of a data frame to a google doc."""
         # query needs to be set large enough to pull down relevant cells of sheet.
         row_number = self.header
-        start = gspread.utils.rowcol_to_a1(row_number + 1, self.col_indent + 1)
-        end = gspread.utils.rowcol_to_a1(
-            row_number + data_frame.shape[0],
-            len(data_frame.columns) + self.col_indent + 1,
+        cells = self._rowcols_range(
+            start = ((row_number + 1, self.col_indent + 1)),
+            end = (row_number + data_frame.shape[0], len(data_frame.columns) + self.col_indent + 1),
         )
-        cells = self.worksheet.range(start + ":" + end)
         for cell in cells:
             if cell.col == self.col_indent + 1:
                 if cell.value != "":
@@ -436,10 +446,7 @@ class Sheet():
                         "Non-empty cell be written to in Google sheet."
                     )
                 # Write index
-                if self.raw_values:
-                    cell.input_value = data_frame.index[cell.row - self.header - 1]
-                else:
-                    cell.value = data_frame.index[cell.row - self.header - 1]
+                cell = self._set_cell_val(cell, data_frame.index[cell.row - self.header - 1])
             else:
                 column = data_frame.columns[cell.col - self.col_indent - 2]
                 index = data_frame.index[cell.row - self.header - 1]
@@ -447,10 +454,7 @@ class Sheet():
                 if type(val) is float:
                     if np.isnan(val):
                         val = nan_val
-                if self.raw_values:
-                    cell.input_value = val
-                else:
-                    cell.value = val
+                cell = self._set_cell_val(cell, val)
         self.worksheet.update_cells(cells)
 
     def write_headers(self, data_frame):
@@ -460,17 +464,16 @@ class Sheet():
         if index_name == "" or index_name is None:
             index_name = "index"
         headers = [index_name] + list(data_frame.columns)
-        start = gspread.utils.rowcol_to_a1(self.header, self.col_indent + 1)
-        end = gspread.utils.rowcol_to_a1(
-            self.header, len(data_frame.columns) + self.col_indent + 1
+        cells = self._rowcols_range(
+            start=(self.header, self.col_indent + 1),
+            end=(self.header, len(data_frame.columns) + self.col_indent + 1)
         )
         # Select a range
-        cells = self.worksheet.range(start + ":" + end)
         self._update_col_lookup(headers)
         for cell, value in zip(cells, headers):
             if cell.value != "":
                 raise ValueError("Error over-writing in non empty sheet")
-            cell.value = value
+            cell = self._set_cell_val(cell, value)
         # Update in batch
         return self.worksheet.update_cells(cells)
 
@@ -522,11 +525,10 @@ class Sheet():
         self._update_row_lookup(index)
 
         num_entries = len(index)
-        start = gspread.utils.rowcol_to_a1(self.header + 1, self.col_indent + 1)
-        end = gspread.utils.rowcol_to_a1(
-            self.header + num_entries, self.col_indent + len(self.col_lookup.index)
+        body_cells = self._rowcols_range(
+            start = (self.header + 1, self.col_indent + 1),
+            end = (self.header + num_entries, self.col_indent + len(self.col_lookup.index)),
         )
-        body_cells = self.worksheet.range(start + ":" + end)
 
         data = {}
         for column in self.col_lookup.index:
@@ -536,10 +538,7 @@ class Sheet():
         for cell in body_cells:
             column = self.col_lookup.index[cell.col - self.col_indent - 1]
             if not use_columns or column in use_columns:
-                if self.raw_values:
-                    val = cell.input_value
-                else:
-                    val = cell.value
+                val = self._get_cell_val(cell)
 
                 if val is not None and val not in self.na_values:
                     if column in self.dtype.keys():
@@ -585,15 +584,15 @@ class Sheet():
         self.worksheets = self.sheet._sheet_list
 
     def _repr_html_(self):
-        if self.ispublished():  # self.document.published.tag=='published':
+        if False: # used to be self.ispublished(), but with v3 API link to published sheet has changed. See e.g. https://stackoverflow.com/questions/40740118/has-the-google-sheets-published-url-suddenly-changed-to-a-different-format
             output = '<p><b>{title}</b> at <a href="{url}" target="_blank">this url.</a>\n</p>'.format(
-                url=self.url, title=self.get_title()
+                url=self.url, title=self.title
             )
-            url = self.url + "/pubhtml?widget=true&amp;headers=false"
+            url = self.embedurl 
             return output + iframe_url(url, width=500, height=300)
         else:
             output = '<p><b>{title}</b> at <a href="{url}" target="_blank">this url.</a>\n</p>'.format(
-                url=self.url, title=self.get_title()
+                url=self.url, title=self.title
             )
             return output + self.read()._repr_html_()
             # return None
@@ -602,11 +601,9 @@ class Sheet():
         """If the IPython notebook is available, and the google
         spreadsheet is published, then the spreadsheet is displayed
         centrally in a box."""
-        if self.ispublished():
+        if False: # used to be self.ispublished(), but with v3 API link to published sheet has changed. See e.g. https://stackoverflow.com/questions/40740118/has-the-google-sheets-published-url-suddenly-changed-to-a-different-format
             try:
-                from IPython.display import HTML
-
-                url = self.url + "/pubhtml?widget=true&amp;headers=false"
+                url = self.embedurl
                 iframe_url(url, width=width, height=height)
             except ImportError:
                 print(ds.url)
@@ -616,14 +613,20 @@ class Sheet():
     #######################################################################
     # Place methods here that are really associated with the resource. #
     #######################################################################
+    @property
+    def id(self):
+        return self.resource._id
+    
+    @property
+    def title(self):
+        """Get the title of the google spreadsheet."""
+        return self.resource.get_name()
 
-    def set_title(self, title):
+    @title.setter
+    def title(self, title):
         """Change the title of the google spreadsheet."""
         self.resource.update_name(title)
 
-    def get_title(self):
-        """Get the title of the google spreadsheet."""
-        return self.resource.get_name()
 
     def share(
         self,
@@ -664,12 +667,7 @@ class Sheet():
         self.resource.share_modify(user, share_type, send_notifications)
 
     def _permission_id(self, user):
-
-        return (
-            self.resource.service.permissions()
-            .getIdForEmail(email=user)
-            .execute()["id"]
-        )
+        return self.resource._permission_id(user)
 
     def share_list(self):
         """
@@ -693,9 +691,5 @@ class Sheet():
 
     def ispublished(self):
         """Find out whether or not the spreadsheet has been published."""
-        return False
-        return (
-            self.resource.drive.service.revisions()
-            .list(fileId=self.resource._id)
-            .execute()["files"][-1]["published"]
-        )
+        return self.resource.ispublished()
+        

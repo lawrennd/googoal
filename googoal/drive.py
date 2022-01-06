@@ -8,7 +8,6 @@ from .log import Logger
 
 from googleapiclient import errors
 from googleapiclient.discovery import build
-from googleapiclient.http import BatchHttpRequest
 from googleapiclient.errors import HttpError
 
 from .googoal import Google_service
@@ -168,12 +167,12 @@ class Resource:
         """
         :param user: email of the user to update.
         :type user: string
-        :param share_type: type of sharing for the given user, type options are 'reader', 'writer', 'owner'
+        :param share_type: type of sharing for the given user, type options are 'reader', 'commenter', 'writer', 'owner'
         :type user: string
         :param send_notifications: 
         """
-        if share_type not in ["writer", "reader", "owner"]:
-            raise ValueError("Share type should be 'writer', 'reader' or 'owner'")
+        if share_type not in ["writer", "commenter", "reader", "owner"]:
+            raise ValueError("Share type should be 'writer', 'commenter', 'reader' or 'owner'")
 
         permission_id = self._permission_id(user)
         body = {"role": share_type}
@@ -184,24 +183,41 @@ class Resource:
         ).execute()
 
     def _permission_id(self, user):
-
-        permissions = self.drive.service.permissions().list(fileId=self._id, fields="permissions").execute()["permissions"]
+        """Return the id of a permission associated with a given user email"""
+        permissions = self._get_permissions()
         for permission in permissions:
-            if user == permission["emailAddress"]:
-                return permission["id"]
+            if "emailAddress" in permission:
+                if user == permission["emailAddress"]:
+                    return permission["id"]
         raise ValueError(f"User {user} not found in permissions of sheet {self._id}")
 
+    def _get_permissions(self):
+        """Get the permissins information"""
+        return self.drive.service.permissions().list(
+            fileId=self._id,
+            fields = "permissions"
+        ).execute()["permissions"]
+        
+    def ispublished(self):
+        """Is the resource published."""
+        permissions = self._get_permissions()
+        for permission in permissions:
+            if permission["id"] == "anyoneWithLink":
+                if permission["role"] in ["reader", "commenter", "writer"]:
+                    return True
+        return False
+        
     def share_list(self):
         """
         Provide a list of all users who can access the document in the form of 
         """
-        permissions = (
-            self.drive.service.permissions().list(fileId=self._id, fields = "permissions").execute()["permissions"]
-        )
-
+        permissions = self._get_permissions()
         entries = []
         for permission in permissions:
-            entries.append((permission["emailAddress"], permission["role"]))
+            if "emailAddress" in permission:
+                entries.append((permission["emailAddress"], permission["role"]))
+            elif permission["id"] == "anyoneWithLink":
+                entries.append(("Anyone with link", permission["role"]))
         return entries
 
     def revision_history(self):
