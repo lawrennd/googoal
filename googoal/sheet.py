@@ -94,8 +94,6 @@ class Sheet():
         else:
             self.worksheet = self.sheet.worksheet(title=worksheet_name)
         self.col_indent = col_indent
-        self.url = f"https://docs.google.com/spreadsheets/d/{self.id}/"
-        self.embedurl = f"https://docs.google.com/spreadsheets/d/e/{self.id}/pubhtml?widget=true&amp;headers=false"
         
 
     #############################################################################
@@ -215,7 +213,7 @@ class Sheet():
                     ss_val = ss[column][index]
                     df_val = data_frame[column][index]
                     ty = type(df_val)
-                    log.info(f"value is {df_fal} type is {ty}")
+                    log.info(f"value is {df_val} type is {ty}")
                     if overwrite:
                         if not ss_val == df_val:
                             update_triples.append((index, column, df_val))
@@ -274,7 +272,7 @@ class Sheet():
         self._update_cells(cells)
 
     def _update_cells(self, cells):
-        self.worksheet.update_cells(cells)
+        self.worksheet.update_cells(cells, value_input_option='RAW')
 
     def _update_cell(self, row, col, val):
         self.worksheet.update_cell(row, col, val)
@@ -416,11 +414,23 @@ class Sheet():
         else:
             return cell.value
 
+    def _standard_types(self, val):
+        """Convert any data types to types that gspread should recognise."""
+        typ = type(val)
+        if pd.isna(val):
+            return ''
+        elif pd.api.types.is_float_dtype(typ):
+            return float(val)
+        elif pd.api.types.is_integer_dtype(typ):
+            return int(val)
+        elif pd.api.types.is_string_dtype(typ):
+            return str(val)
+        else:
+            return val
     def _set_cell_val(self, cell, val):
         """Set the cell value"""
         # gspread doesn't handle writing NaN, replace with empty.
-        if pd.isna(val):
-            val = ''
+        val = self._standard_types(val)
         if self.raw_values:
             cell.input_value = val
         else:
@@ -455,7 +465,7 @@ class Sheet():
                     if np.isnan(val):
                         val = nan_val
                 cell = self._set_cell_val(cell, val)
-        self.worksheet.update_cells(cells)
+        self._update_cells(cells)
 
     def write_headers(self, data_frame):
         """Write the headers of a data frame to the spreadsheet."""
@@ -475,7 +485,7 @@ class Sheet():
                 raise ValueError("Error over-writing in non empty sheet")
             cell = self._set_cell_val(cell, value)
         # Update in batch
-        return self.worksheet.update_cells(cells)
+        return self._update_cells(cells)
 
     def read_headers(self):
 
@@ -584,31 +594,11 @@ class Sheet():
         self.worksheets = self.sheet._sheet_list
 
     def _repr_html_(self):
-        if False: # used to be self.ispublished(), but with v3 API link to published sheet has changed. See e.g. https://stackoverflow.com/questions/40740118/has-the-google-sheets-published-url-suddenly-changed-to-a-different-format
-            output = '<p><b>{title}</b> at <a href="{url}" target="_blank">this url.</a>\n</p>'.format(
-                url=self.url, title=self.title
-            )
-            url = self.embedurl 
-            return output + iframe_url(url, width=500, height=300)
-        else:
-            output = '<p><b>{title}</b> at <a href="{url}" target="_blank">this url.</a>\n</p>'.format(
-                url=self.url, title=self.title
-            )
-            return output + self.read()._repr_html_()
-            # return None
-
-    def show(self, width=400, height=200):
-        """If the IPython notebook is available, and the google
-        spreadsheet is published, then the spreadsheet is displayed
-        centrally in a box."""
-        if False: # used to be self.ispublished(), but with v3 API link to published sheet has changed. See e.g. https://stackoverflow.com/questions/40740118/has-the-google-sheets-published-url-suddenly-changed-to-a-different-format
-            try:
-                url = self.embedurl
-                iframe_url(url, width=width, height=height)
-            except ImportError:
-                print(ds.url)
-            else:
-                raise
+        output = '<p><b>{title}</b> at <a href="{url}" target="_blank">this url.</a>\n</p>'.format(
+            url=self.url, title=self.title
+        )
+        return output + self.read()._repr_html_()
+    
 
     #######################################################################
     # Place methods here that are really associated with the resource. #

@@ -73,6 +73,9 @@ class Resource:
 
     def __init__(self, name=None, mime_type=None, id=None, drive=None):
 
+        self._name = name
+        self._mime_type = mime_type
+        self._url = None
         if drive is None:
             self.drive = Drive()
         else:
@@ -82,10 +85,12 @@ class Resource:
             if name is None:
                 name = "Google Drive Resource"
             # create a new sheet
-            body = {"mimeType": mime_type, "name": name}
             log.info(f"Creating new file of type {mime_type} and name {name}")
             try:
+                body = {"name": name, "mime_type": mime_type}
                 self.drive.service.files().create(body=body).execute()
+                self._mime_type = mime_type
+                self._name = name
             except HttpError as error:
                 raise Exception(f"Cannot access service: {error}")
 
@@ -98,19 +103,8 @@ class Resource:
             except HttpError as error:
                 raise Exception(f"Cannot access service: {error}")
 
-            self.name = name
-            self.mime_type = mime_type
         else:
             self._id = id
-            if name is None:
-                self.get_name()
-            else:
-                self.name = name
-            if mime_type is None:
-                self.get_mime_type()
-            else:
-                self.mime_type = mime_type
-            self.get_url()
 
     def delete(self, empty_bin=False):
         """Delete the file from drive."""
@@ -229,38 +223,51 @@ class Resource:
         ):
             print(item["published"], item["selfLink"])
 
-    def update_name(self, name):
-        """Change the name of the file."""
-        body= {"name": name}
-        self.drive.service.files().update(
-            fileId=self._id,
-            body=body
-        ).execute()
-        self.name = name
+    @property
+    def name(self):
+        if self._name is None:
+            self._name = self.drive.service.files().get(fileId=self._id, fields="name").execute()["name"]
+        return self._name
 
+    @name.setter
+    def name(self, name):
+        body = {"name": name}
+        self._name = name
+        self.drive.service.files().update(fileId=self._id, body=body).execute()
+
+    
+    @property
+    def mime_type(self):
+        if self._mime_type is None:
+            self._mime_type = self.drive.service.files().get(fileId=self._id, fields="mimeType").execute()["mimeType"]
+        return self._mime_type
+
+
+    @property
+    def url(self):
+        if self._url is None:
+            self._url = self.drive.service.files().get(fileId=self._id, fields="webViewLink").execute()["webViewLink"]
+        return self._url
+    
+    def get_name(self):
+        """Get the title of the file."""
+        warnings.warn("Name is now a property, use Resource.name", DeprecationWarning)
+        return self.name
+    
+    def update_name(self, name):
+        """Change the title of the file."""
+        warnings.warn("Name is now a property, use Resource.name", DeprecationWarning)
+        self.name = name
     def get_mime_type(self):
         """Get the mime type of the file."""
-
-        details = (
-            self.drive.service.files()
-            .list(q="name='" + self.name + "'")
-            .execute()["files"][0]
-        )
-        self.mime_type = details["mimeType"]
+        warnings.warn("mime_type is now a property, use Resource.mime_type", DeprecationWarning)
         return self.mime_type
 
-    def get_name(self):
-        """Get the name of the file."""
-        self.name = (
-            self.drive.service.files().get(fileId=self._id, fields="name").execute()["name"]
-        )
-        return self.name
 
     def get_url(self):
-        d = self.drive.service.files().get(fileId=self._id, fields="webViewLink").execute()
-        self.url = d["webViewLink"]
-        
+        warnings.warn("url is now a property, use Resource.url", DeprecationWarning)
         return self.url
+
 
     def update_drive(self, drive):
         """Update the file's drive API service."""
